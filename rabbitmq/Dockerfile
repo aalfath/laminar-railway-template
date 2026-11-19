@@ -9,3 +9,7 @@ FROM rabbitmq:4.2.9-alpine@sha256:cd4f5c5bb4ffe530dba84770a8d139b8518470cdd385fe
 ENV RABBITMQ_NODENAME=rabbit@localhost \
     RABBITMQ_DEFAULT_USER=laminar \
     PORT=15692
+
+COPY start.sh /usr/local/bin/laminar-rabbitmq
+RUN chmod +x /usr/local/bin/laminar-rabbitmq
+CMD ["/usr/local/bin/laminar-rabbitmq"]
