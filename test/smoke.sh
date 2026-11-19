@@ -2,7 +2,7 @@
 # End-to-end check through the gateway: login gate, sign-in, workspace and
 # project, project API key, one OTLP/HTTP trace, and the trace in the API.
 # Usage: BASE=https://your-app.up.railway.app USER=admin PASS=... sh test/smoke.sh
-# Needs curl and python3.
+# Needs curl and jq.
 set -eu
 BASE="${BASE:-http://localhost:8080}"
 USER="${USER:-admin}"; PASS="${PASS:?set PASS}"
@@ -18,14 +18,14 @@ c -o /dev/null -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" \
   -d '{"email":"smoke@example.com","name":"Smoke"}' "$BASE/api/auth/sign-in/local-email"
 WS=$(c -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" \
   -d '{"name":"Smoke WS","projectName":"smoke"}' "$BASE/api/workspaces")
-PID=$(echo "$WS" | python3 -c 'import json,sys;print(json.load(sys.stdin)["projectId"])')
+PID=$(echo "$WS" | jq -r .projectId)
 echo "project: $PID"
 KEY=$(c -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" -d '{"name":"smoke"}' \
-  "$BASE/api/projects/$PID/api-keys" | python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])')
+  "$BASE/api/projects/$PID/api-keys" | jq -r .value)
 echo "api key: created (${#KEY} chars)"
 
-TID=$(python3 -c 'import secrets;print(secrets.token_hex(16))'); SID=$(python3 -c 'import secrets;print(secrets.token_hex(8))')
-NOW=$(python3 -c 'import time;print(time.time_ns())')
+hex() { od -An -N"$1" -tx1 /dev/urandom | tr -d ' \n'; }
+TID=$(hex 16); SID=$(hex 8); NOW="$(date +%s)000000000"
 BODY=$(cat <<JSON
 {"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"smoke"}}]},
  "scopeSpans":[{"scope":{"name":"smoke"},"spans":[{"traceId":"$TID","spanId":"$SID","name":"smoke-span",
