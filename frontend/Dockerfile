@@ -5,6 +5,8 @@ FROM ghcr.io/lmnr-ai/frontend:v0.3.4@sha256:512e9638f9fc9145957cf3463f47cda5f260
 ENV PORT=5667 \
     HOSTNAME=:: \
     ENVIRONMENT=FULL \
+    CLICKHOUSE_USER=laminar \
+    CLICKHOUSE_RO_USER=laminar_ro \
     CLICKHOUSE_POSTGRES_USER=laminar_ch_ro \
     CLICKHOUSE_POSTGRES_PORT=5432
 

@@ -9,6 +9,8 @@ ENV PORT=8000 \
     GRPC_PORT=8001 \
     CONSUMER_PORT=8002 \
     ENVIRONMENT=FULL \
+    CLICKHOUSE_USER=laminar \
+    CLICKHOUSE_RO_USER=laminar_ro \
     QUICKWIT_SPANS_INDEX_ID=spans_v2
 
 COPY start.sh /app-server/railway-start.sh
