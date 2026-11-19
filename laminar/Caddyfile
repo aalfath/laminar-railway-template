@@ -1,0 +1,42 @@
+{
+	admin off
+	auto_https off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:{$PORT} {
+	# Railway health check. Answers without a login.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# SDK and OpenTelemetry ingestion. The app server checks the project API key
+	# on every request, so no gateway login here.
+	@api path /v1 /v1/*
+	handle @api {
+		reverse_proxy {$APP_SERVER_HOST}:{$APP_SERVER_PORT} {
+			lb_try_duration 30s
+		}
+	}
+
+	# CLI device login (lmnr-cli): the CLI asks for a code and polls for the token.
+	# Approving the code happens in the dashboard, behind the login below.
+	@device path /api/auth/device/code /api/auth/device/token
+	handle @device {
+		reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT}
+	}
+
+	# Dashboard. Self-hosted Laminar signs in any email without a password,
+	# so the gateway asks for a login first.
+	handle {
+		basic_auth {
+			{$LAMINAR_USERNAME} {$LAMINAR_PASSWORD_HASH}
+		}
+		reverse_proxy {$FRONTEND_HOST}:{$FRONTEND_PORT} {
+			header_up -Authorization
+			lb_try_duration 30s
+		}
+	}
+}

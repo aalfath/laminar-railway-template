@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- Railway: listen on IPv6 and IPv4 (the private network is IPv6), and keep
+     the server's own log files small; logs also go to the deploy logs. -->
+<clickhouse>
+    <listen_host>::</listen_host>
+    <listen_host>0.0.0.0</listen_host>
+    <listen_try>1</listen_try>
+    <logger>
+        <level>warning</level>
+        <console>1</console>
+        <size>10M</size>
+        <count>2</count>
+    </logger>
+</clickhouse>

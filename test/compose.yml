@@ -1,0 +1,77 @@
+# Local test of the template's images with the same settings Railway uses.
+# Not used by Railway. Run from the repo root:
+#   docker compose -f test/compose.yml up -d --build
+name: laminar-test
+
+x-ch: &ch
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: laminar
+  CLICKHOUSE_PASSWORD: test-ch-admin-pass
+  CLICKHOUSE_RO_USER: laminar_ro
+  CLICKHOUSE_RO_PASSWORD: test-ch-ro-pass
+
+services:
+  postgres:
+    image: postgres:18
+    environment: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: test-pg-pass, POSTGRES_DB: railway }
+    volumes: [pg:/var/lib/postgresql]
+  redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "test-redis-pass"]
+  rabbitmq:
+    build: ../rabbitmq
+    hostname: laminar-rabbitmq
+    environment: { RABBITMQ_DEFAULT_USER: laminar, RABBITMQ_DEFAULT_PASS: test-rabbit-pass }
+    volumes: [rabbit:/var/lib/rabbitmq]
+  clickhouse:
+    build: ../clickhouse
+    environment:
+      CLICKHOUSE_USER: laminar
+      CLICKHOUSE_PASSWORD: test-ch-admin-pass
+      CLICKHOUSE_RO_PASSWORD: test-ch-ro-pass
+    volumes: [ch:/var/lib/clickhouse]
+    ulimits: { nofile: { soft: 262144, hard: 262144 } }
+  quickwit:
+    build: ../quickwit
+    volumes: [qw:/quickwit/qwdata]
+  frontend:
+    build: ../frontend
+    environment:
+      <<: *ch
+      DATABASE_URL: postgresql://postgres:test-pg-pass@postgres:5432/railway
+      CLICKHOUSE_POSTGRES_HOST: postgres
+      CLICKHOUSE_POSTGRES_PASSWORD: test-pg-ro-pass
+      REDIS_URL: redis://default:test-redis-pass@redis:6379
+      BACKEND_URL: http://app-server:8000
+      BACKEND_RT_URL: http://app-server:8002
+      QUICKWIT_SEARCH_URL: http://quickwit:7280
+      SHARED_SECRET_TOKEN: test-shared-secret
+      AEAD_SECRET_KEY: 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
+      NEXTAUTH_SECRET: test-nextauth-secret
+      NEXTAUTH_URL: http://localhost:8080
+      NEXT_PUBLIC_URL: http://localhost:8080
+      PUBLIC_API_BASE_URL: http://localhost:8080
+      LAMINAR_TELEMETRY_DISABLED: "true"
+  app-server:
+    build: ../app-server
+    environment:
+      <<: *ch
+      DATABASE_URL: postgresql://postgres:test-pg-pass@postgres:5432/railway
+      RABBITMQ_URL: amqp://laminar:test-rabbit-pass@rabbitmq:5672/%2f
+      REDIS_URL: redis://default:test-redis-pass@redis:6379
+      QUICKWIT_SEARCH_URL: http://quickwit:7280
+      QUICKWIT_INGEST_URL: http://quickwit:7281
+      SHARED_SECRET_TOKEN: test-shared-secret
+      AEAD_SECRET_KEY: 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
+      NEXT_PUBLIC_URL: http://localhost:8080
+      NEXT_INTERNAL_URL: http://frontend:5667
+  laminar:
+    build: ../laminar
+    ports: ["8080:8080"]
+    environment:
+      LAMINAR_USERNAME: admin
+      LAMINAR_PASSWORD: test-ui-pass
+      FRONTEND_HOST: frontend
+      APP_SERVER_HOST: app-server
+
+volumes: { pg: {}, rabbit: {}, ch: {}, qw: {} }
