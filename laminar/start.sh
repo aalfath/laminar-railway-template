@@ -1,7 +1,7 @@
 #!/bin/sh
 # Hashes the dashboard password and starts Caddy.
 set -eu
-: "${LAMINAR_USERNAME:?LAMINAR_USERNAME is required}"
+export LAMINAR_USERNAME="${LAMINAR_USERNAME:-admin}"
 : "${LAMINAR_PASSWORD:?LAMINAR_PASSWORD is required}"
 : "${FRONTEND_HOST:?FRONTEND_HOST is required}"
 : "${APP_SERVER_HOST:?APP_SERVER_HOST is required}"

@@ -7,4 +7,5 @@ FROM rabbitmq:4.2.9-alpine@sha256:cd4f5c5bb4ffe530dba84770a8d139b8518470cdd385fe
 # The Prometheus plugin (on by default in this image) serves /metrics on 15692
 # without a login, which Railway uses as the health check.
 ENV RABBITMQ_NODENAME=rabbit@localhost \
+    RABBITMQ_DEFAULT_USER=laminar \
     PORT=15692

@@ -2,7 +2,9 @@
 # Waits for the services the app server connects to at boot, then starts it.
 # Same order as upstream's docker-compose-full.yml: Postgres, RabbitMQ, Redis,
 # ClickHouse and Quickwit first. The app server gives up on Quickwit for good
-# if it can't reach it at boot, and crashes if RabbitMQ isn't up.
+# if it can't reach it at boot, and crashes if RabbitMQ isn't up. On Railway
+# every service starts at once, so it also waits for the dashboard, which
+# creates the database tables before it starts listening.
 set -euo pipefail
 
 deadline=$(( $(date +%s) + ${WAIT_TIMEOUT:-240} ))
@@ -29,6 +31,7 @@ wait_for() { # name host port
 [[ -n "${REDIS_URL:-}" ]] && wait_for Redis $(hostport "$REDIS_URL" 6379)
 [[ -n "${CLICKHOUSE_URL:-}" ]] && wait_for ClickHouse $(hostport "$CLICKHOUSE_URL" 8123)
 [[ -n "${QUICKWIT_INGEST_URL:-}" ]] && wait_for Quickwit $(hostport "$QUICKWIT_INGEST_URL" 7281)
+[[ -n "${NEXT_INTERNAL_URL:-}" ]] && wait_for Frontend $(hostport "$NEXT_INTERNAL_URL" 5667)
 echo "[wait] dependencies are up"
 
 exec ./app-server
