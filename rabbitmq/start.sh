@@ -10,7 +10,14 @@ docker-entrypoint.sh rabbitmq-server &
 pid=$!
 trap 'kill -TERM "$pid" 2>/dev/null; wait "$pid"; exit $?' TERM INT
 
-if rabbitmqctl -q await_startup --timeout 300 >/dev/null 2>&1; then
+# await_startup returns at once while the Erlang node isn't up yet, so poll it.
+ready=0
+for _ in $(seq 1 150); do
+  kill -0 "$pid" 2>/dev/null || break
+  if rabbitmqctl -q await_startup --timeout 10 >/dev/null 2>&1; then ready=1; break; fi
+  sleep 2
+done
+if (( ready )); then
   if [[ -n "${RABBITMQ_DEFAULT_PASS:-}" ]]; then
     if rabbitmqctl -q list_users 2>/dev/null | awk '{print $1}' | grep -qx "$user"; then
       printf '%s' "$RABBITMQ_DEFAULT_PASS" | rabbitmqctl -q change_password "$user" >/dev/null 2>&1 \
