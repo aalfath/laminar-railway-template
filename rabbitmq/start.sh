@@ -20,11 +20,9 @@ done
 if (( ready )); then
   if [[ -n "${RABBITMQ_DEFAULT_PASS:-}" ]]; then
     if rabbitmqctl -q list_users 2>/dev/null | awk '{print $1}' | grep -qx "$user"; then
-      printf '%s' "$RABBITMQ_DEFAULT_PASS" | rabbitmqctl -q change_password "$user" >/dev/null 2>&1 \
-        || rabbitmqctl -q change_password "$user" "$RABBITMQ_DEFAULT_PASS" >/dev/null
+      rabbitmqctl -q change_password "$user" "$RABBITMQ_DEFAULT_PASS" >/dev/null
     else
-      printf '%s' "$RABBITMQ_DEFAULT_PASS" | rabbitmqctl -q add_user "$user" >/dev/null 2>&1 \
-        || rabbitmqctl -q add_user "$user" "$RABBITMQ_DEFAULT_PASS" >/dev/null
+      rabbitmqctl -q add_user "$user" "$RABBITMQ_DEFAULT_PASS" >/dev/null
     fi
     rabbitmqctl -q set_user_tags "$user" administrator >/dev/null
     rabbitmqctl -q set_permissions -p / "$user" '.*' '.*' '.*' >/dev/null
