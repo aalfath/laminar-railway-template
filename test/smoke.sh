@@ -20,7 +20,7 @@ WS=$(c -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" \
   -d '{"name":"Smoke WS","projectName":"smoke"}' "$BASE/api/workspaces")
 PID=$(echo "$WS" | jq -r .projectId)
 echo "project: $PID"
-KEY=$(c -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" -d '{"name":"smoke"}' \
+KEY=$(c -X POST -H 'Content-Type: application/json' -H "Origin: $BASE" -d '{"name":"smoke","isIngestOnly":false}' \
   "$BASE/api/projects/$PID/api-keys" | jq -r .value)
 echo "api key: created (${#KEY} chars)"
 
@@ -39,3 +39,7 @@ echo "ingest: $(curl -sS -o /dev/null -w '%{http_code}' -X POST -H "Authorizatio
 echo "trace id: $TID"
 printf '%s\n' "$PID" > /tmp/laminar-smoke-project
 printf '%s\n' "$KEY" > /tmp/laminar-smoke-key
+sleep 8
+echo "trace stored: $(curl -sS -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"SELECT count() AS n FROM spans WHERE trace_id = '$(echo "$TID" | sed -E 's/(.{8})(.{4})(.{4})(.{4})(.{12})/\1-\2-\3-\4-\5/')'\"}" \
+  "$BASE/v1/sql/query")"
